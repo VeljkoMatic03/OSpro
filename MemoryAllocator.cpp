@@ -54,14 +54,16 @@ void* MemoryAllocator::malloc(size_t size) {
     }
     BlockHeader* newNode = (BlockHeader*) ((uint64*) curr + (size + 1) * MEM_BLOCK_SIZE);
     if(prev) prev->next = newNode;
+    else freeMemHead = newNode;
     newNode->next = curr->next;
+    newNode->sizeBlocks = curr->sizeBlocks - size - 1;
     curr->sizeBlocks = size + 1;
     return (void*) ((uint64*) curr + sizeof(BlockHeader));
 }
 
 void MemoryAllocator::joinBlocks(BlockHeader* prev) {
     if(!prev->next) return;
-    if((uint64 *)prev + prev->sizeBlocks * MEM_BLOCK_SIZE + 1 == (uint64*) prev->next) {
+    if((uint64 *)prev + prev->sizeBlocks * MEM_BLOCK_SIZE == (uint64*) prev->next) {
         BlockHeader* old = prev->next;
         prev->next = old->next;
         prev->sizeBlocks += old->sizeBlocks;
