@@ -40,7 +40,7 @@ void* MemoryAllocator::malloc(size_t size) {
         initialized = true;
         freeMemHead = (BlockHeader*) ((uint64*) HEAP_START_ADDR);
         freeMemHead->next = nullptr;
-        freeMemHead->sizeBlocks = (uint64) ((uint64*) HEAP_END_ADDR - (uint64*) HEAP_START_ADDR -
+        freeMemHead->sizeBlocks = (uint64) ((uint8*) HEAP_END_ADDR - (uint8*) HEAP_START_ADDR -
                                                              sizeof(BlockHeader)) / MEM_BLOCK_SIZE;
     }
     BlockHeader *curr = freeMemHead, *prev= nullptr;
@@ -50,15 +50,15 @@ void* MemoryAllocator::malloc(size_t size) {
     if(curr->sizeBlocks == size + 1) {
         if(prev) prev->next = curr->next;
         else freeMemHead = curr->next;
-        return (void*)((uint64*) curr + sizeof(BlockHeader));
+        return (void*)((uint8*) curr + sizeof(BlockHeader));
     }
-    BlockHeader* newNode = (BlockHeader*) ((uint64*) curr + (size + 1) * MEM_BLOCK_SIZE);
+    BlockHeader* newNode = (BlockHeader*) ((uint8*) curr + (size + 1) * MEM_BLOCK_SIZE);
     if(prev) prev->next = newNode;
     else freeMemHead = newNode;
     newNode->next = curr->next;
     newNode->sizeBlocks = curr->sizeBlocks - size - 1;
     curr->sizeBlocks = size + 1;
-    return (void*) ((uint64*) curr + sizeof(BlockHeader));
+    return (void*) ((uint8*) curr + sizeof(BlockHeader));
 }
 
 void MemoryAllocator::joinBlocks(BlockHeader* prev) {

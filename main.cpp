@@ -6,10 +6,13 @@
 #include "../h/workers.hpp"
 #include "../h/print.hpp"
 #include "../h/riscv.hpp"
+#include "../h/syscall_c.h"
+#include "../lib/console.h"
+#include "../h/MemoryAllocator.hpp"
 
 int main()
 {
-    TCB *threads[5];
+    /*TCB *threads[5];
 
     threads[0] = TCB::createThread(nullptr);
     TCB::running = threads[0];
@@ -39,6 +42,20 @@ int main()
         delete thread;
     }
     printString("Finished\n");
+
+    return 0;*/
+
+    Riscv::w_stvec((uint64) &Riscv::supervisorTrap);
+
+    char* arr = (char*) mem_alloc(26*sizeof (char));
+    char c = 65;
+    for(int i = 0; i < 26; i++){
+        arr[i] = c + i;
+    }
+    for(int i = 0; i < 26; i++) __putc(arr[i]);
+
+    int status = mem_free(arr);
+    printInteger(status);
 
     return 0;
 }

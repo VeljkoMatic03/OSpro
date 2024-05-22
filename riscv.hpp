@@ -1,7 +1,3 @@
-//
-// Created by marko on 20.4.22..
-//
-
 #ifndef OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_RISCV_HPP
 #define OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_RISCV_HPP
 
@@ -75,6 +71,24 @@ public:
 
     // write register sstatus
     static void w_sstatus(uint64 sstatus);
+
+    //read register a0
+    static uint64 r_a0();
+
+    //write register a0
+    static void w_a0(uint64);
+
+    //read register a1
+    static uint64 r_a1();
+
+    //read register a2
+    static uint64 r_a2();
+
+    //read register a3
+    static uint64 r_a3();
+
+    //read register a4
+    static uint64 r_a4();
 
     // supervisor trap
     static void supervisorTrap();
@@ -176,6 +190,46 @@ inline uint64 Riscv::r_sstatus()
 inline void Riscv::w_sstatus(uint64 sstatus)
 {
     __asm__ volatile ("csrw sstatus, %[sstatus]" : : [sstatus] "r"(sstatus));
+}
+
+inline uint64 Riscv::r_a0()
+{
+    uint64 volatile a0;
+    __asm__ volatile ("mv %0, a0" : "=r"(a0));
+    return a0;
+}
+
+inline void Riscv::w_a0(uint64 a0)
+{
+    __asm__ volatile ("mv a0, %0" : : "r"(a0));
+}
+
+inline uint64 Riscv::r_a1()
+{
+    uint64 volatile a1;
+    __asm__ volatile ("mv %0, a1" : "=r"(a1));
+    return a1;
+}
+
+inline uint64 Riscv::r_a2()
+{
+    uint64 volatile a2;
+    __asm__ volatile ("mv %0, a2" : "=r"(a2));
+    return a2;
+}
+
+inline uint64 Riscv::r_a3()
+{
+    uint64 volatile a3;
+    __asm__ volatile ("mv %0, a3" : "=r"(a3));
+    return a3;
+}
+
+inline uint64 Riscv::r_a4()
+{
+    uint64 volatile a4;
+    __asm__ volatile ("mv %0, a4" : "=r"(a4));
+    return a4;
 }
 
 #endif //OS1_VEZBE07_RISCV_CONTEXT_SWITCH_2_INTERRUPT_RISCV_HPP
