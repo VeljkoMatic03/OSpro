@@ -16,20 +16,25 @@ public:
 
     uint64 getTimeSlice() const { return timeSlice; }
 
-    using Body = void (*)();
+    using Body = void (*)(void*);
 
-    static TCB *createThread(Body body);
+    static int createThread(TCB** handle, Body body, void* arg, uint64* stackptr);
 
     static void yield();
 
     static TCB *running;
 
+    static uint64 constexpr STACK_SIZE = 1024;
+
+    static void dispatch();
+
 private:
-    TCB(Body body, uint64 timeSlice) :
+    TCB(Body body, void* arg, uint64 timeSlice, uint64* stackptr) :
             body(body),
-            stack(body != nullptr ? new uint64[STACK_SIZE] : nullptr),
+            arg(arg),
+            stack(stackptr),
             context({(uint64) &threadWrapper,
-                     stack != nullptr ? (uint64) &stack[STACK_SIZE] : 0
+                     stack != nullptr ? (uint64) &stack[DEFAULT_STACK_SIZE] : 0
                     }),
             timeSlice(timeSlice),
             finished(false)
@@ -44,6 +49,7 @@ private:
     };
 
     Body body;
+    void* arg;
     uint64 *stack;
     Context context;
     uint64 timeSlice;
@@ -55,11 +61,9 @@ private:
 
     static void contextSwitch(Context *oldContext, Context *runningContext);
 
-    static void dispatch();
 
     static uint64 timeSliceCounter;
 
-    static uint64 constexpr STACK_SIZE = 1024;
     static uint64 constexpr TIME_SLICE = 2;
 };
 

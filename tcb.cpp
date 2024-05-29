@@ -4,18 +4,22 @@
 
 #include "../h/tcb.hpp"
 #include "../h/riscv.hpp"
+#include "../lib/console.h"
 
 TCB *TCB::running = nullptr;
 
 uint64 TCB::timeSliceCounter = 0;
 
-TCB *TCB::createThread(Body body)
+int TCB::createThread(TCB** handle, Body body, void* arg, uint64* stackptr)
 {
-    return new TCB(body, TIME_SLICE);
+    *handle = new TCB(body, arg, TIME_SLICE, stackptr);
+    if(*handle) return 0;
+    return -1;
 }
 
 void TCB::yield()
 {
+    //__asm__ volatile ("li a0, 0x12");
     __asm__ volatile ("ecall");
 }
 
@@ -30,8 +34,8 @@ void TCB::dispatch()
 
 void TCB::threadWrapper()
 {
-    Riscv::popSppSpie();
-    running->body();
+    //Riscv::popSppSpie();
+    running->body(running->arg);
     running->setFinished(true);
-    TCB::yield();
+    TCB::dispatch();
 }

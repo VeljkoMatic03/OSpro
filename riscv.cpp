@@ -12,7 +12,7 @@ void Riscv::popSppSpie()
 
 void Riscv::handleSupervisorTrap()
 {
-    uint64 scause = r_scause();
+    uint64 volatile scause = r_scause();
     uint64 volatile a0 = Riscv::r_a0();
     uint64 volatile a1 = Riscv::r_a1();
     uint64 volatile a2 = Riscv::r_a2();
@@ -27,7 +27,7 @@ void Riscv::handleSupervisorTrap()
         a2 = a2;
         a3 = a3;
         a4 = a4;
-        int retval;
+        int volatile retval;
 
         switch (a0) {
             case 0x01:
@@ -46,11 +46,18 @@ void Riscv::handleSupervisorTrap()
                 break;
 
             case 0x11:
-                //thread_create
+                //create_thread
+                retval = TCB::createThread((TCB**) a1, (void(*)(void*)) a2, (void*) a3, (uint64*) a4);
+                __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
+                break;
+
+            case 0x012:
+                TCB::dispatch();
+                break;
+            default:
+                TCB::dispatch();
                 break;
         }
-
-
 
         w_sstatus(sstatus);
         w_sepc(sepc);
