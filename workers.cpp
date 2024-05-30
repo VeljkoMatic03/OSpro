@@ -4,7 +4,9 @@
 
 #include "../lib/hw.h"
 #include "../h/tcb.hpp"
-#include "../h/print.hpp"
+#include "../test/printing.hpp"
+#include "../h/syscall_c.hpp"
+#include "../lib/console.h"
 
 void workerBodyA(void*)
 {
@@ -13,13 +15,16 @@ void workerBodyA(void*)
         printString("A: i=");
         printInteger(i);
         printString("\n");
+        /*__putc('a');
+        __putc('\n');*/
         for (uint64 j = 0; j < 10000; j++)
         {
             for (uint64 k = 0; k < 30000; k++)
             {
                 // busy wait
             }
-            TCB::dispatch();
+            //TCB::dispatch();
+            thread_dispatch();
         }
     }
 }
@@ -31,13 +36,20 @@ void workerBodyB(void*)
         printString("B: i=");
         printInteger(i);
         printString("\n");
+        /*__putc('b');
+        __putc(i + 65);
+        __putc('\n');*/
+        if(i == 10) {
+            __asm__ volatile ("csrr t6, sepc");
+        }
         for (uint64 j = 0; j < 10000; j++)
         {
             for (uint64 k = 0; k < 30000; k++)
             {
                 // busy wait
             }
-            TCB::dispatch();
+            //TCB::dispatch();
+            thread_dispatch();
         }
     }
 }
@@ -45,7 +57,9 @@ void workerBodyB(void*)
 static uint64 fibonacci(uint64 n)
 {
     if (n == 0 || n == 1) { return n; }
-    if (n % 10 == 0) { TCB::dispatch(); }
+    if (n % 10 == 0) { //TCB::dispatch();
+        thread_dispatch();
+    }
     return fibonacci(n - 1) + fibonacci(n - 2);
 }
 
@@ -57,11 +71,14 @@ void workerBodyC(void*)
         printString("C: i=");
         printInteger(i);
         printString("\n");
+        /*__putc('c');
+        __putc('\n');*/
     }
 
     printString("C: yield\n");
     __asm__ ("li t1, 7");
-    TCB::dispatch();
+    //TCB::dispatch();
+    thread_dispatch();
 
     uint64 t1 = 0;
     __asm__ ("mv %[t1], t1" : [t1] "=r"(t1));
@@ -80,8 +97,11 @@ void workerBodyC(void*)
         printString("C: i=");
         printInteger(i);
         printString("\n");
+        //__putc('c');
+        //__putc('\n');
     }
-    TCB::dispatch();
+    //TCB::dispatch();
+    thread_dispatch();
 }
 
 void workerBodyD(void*)
@@ -92,11 +112,14 @@ void workerBodyD(void*)
         printString("D: i=");
         printInteger(i);
         printString("\n");
+        //__putc('d');
+        //__putc('\n');
     }
 
     printString("D: yield\n");
     __asm__ ("li t1, 5");
-    TCB::dispatch();
+    //TCB::dispatch();
+    thread_dispatch();
 
     uint64 result = fibonacci(16);
     printString("D: fibonaci=");
@@ -108,6 +131,9 @@ void workerBodyD(void*)
         printString("D: i=");
         printInteger(i);
         printString("\n");
+        //__putc('d');
+        //__putc('\n');
     }
-    TCB::dispatch();
+    //TCB::dispatch();
+    thread_dispatch();
 }

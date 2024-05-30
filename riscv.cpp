@@ -2,7 +2,8 @@
 #include "../h/tcb.hpp"
 #include "../lib/console.h"
 #include "../h/MemoryAllocator.hpp"
-#include "../h/print.hpp"
+#include "../test/printing.hpp"
+#include "../h/sem.hpp"
 
 void Riscv::popSppSpie()
 {
@@ -46,16 +47,60 @@ void Riscv::handleSupervisorTrap()
                 break;
 
             case 0x11:
-                //create_thread
+                //create_thread()
                 retval = TCB::createThread((TCB**) a1, (void(*)(void*)) a2, (void*) a3, (uint64*) a4);
                 __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
                 break;
 
-            case 0x012:
+            case 0x12:
+                //thread_exit()
+                TCB::exit();
+                __asm__ volatile ("li t1, 0x0");
+                __asm__ volatile ("sw t1, 80(s0)");
+                break;
+
+            case 0x013:
+                //thread_dispatch()
                 TCB::dispatch();
                 break;
+
+            case 0x21:
+                //sem_open()
+                retval = sem::createSem((sem**) a1, (unsigned) a2);
+                __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
+                break;
+
+            case 0x22:
+                //sem_close()
+                retval = sem::close((sem*) a1);
+                __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
+                break;
+
+            case 0x23:
+                //sem_wait()
+                retval = sem::wait((sem*) a1);
+                __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
+                break;
+
+            case 0x24:
+                //sem_signal()
+                retval = sem::signal((sem*) a1);
+                __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
+                break;
+
+            case 0x25:
+                //sem_timedwait()
+                retval = sem::timedwait((sem*) a1, (time_t) a2);
+                __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
+                break;
+
+            case 0x26:
+                //sem_trywait()
+
+
             default:
-                TCB::dispatch();
+                /*Riscv::mc_sstatus(Riscv::SSTATUS_SPP);
+                sstatus = r_sstatus();*/
                 break;
         }
 
@@ -69,6 +114,7 @@ void Riscv::handleSupervisorTrap()
         TCB::timeSliceCounter++;
         if (TCB::timeSliceCounter >= TCB::running->getTimeSlice())
         {
+            __putc('a');
             uint64 volatile sepc = r_sepc();
             uint64 volatile sstatus = r_sstatus();
             TCB::timeSliceCounter = 0;

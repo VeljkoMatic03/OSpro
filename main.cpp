@@ -1,111 +1,37 @@
 //
 // Created by marko on 20.4.22..
 //
-/*
-#include "../h/tcb.hpp"
-#include "../h/workers.hpp"
-#include "../h/print.hpp"
-#include "../h/riscv.hpp"
-#include "../h/syscall_c.h"
-#include "../lib/console.h"
-#include "../h/MemoryAllocator.hpp"
-#include "../lib/mem.h"
-
-void usermain(void*) {
-    for(int i = 0; i < 100; i++) {
-        //printInteger(i);
-        __putc('a');
-        __putc('\n');
-    }
-}
-
-int main()
-{
-    Riscv::w_stvec((uint64) &Riscv::supervisorTrap);
-    //Riscv::mc_sstatus(Riscv::SSTATUS_SIE);
-
-    *TCB *threads[5];
-
-    threads[0] = TCB::createThread(nullptr);
-    TCB::running = threads[0];
-
-    threads[1] = TCB::createThread(workerBodyA);
-    printString("ThreadA created\n");
-    threads[2] = TCB::createThread(workerBodyB);
-    printString("ThreadB created\n");
-    threads[3] = TCB::createThread(workerBodyC);
-    printString("ThreadC created\n");
-    threads[4] = TCB::createThread(workerBodyD);
-    printString("ThreadD created\n");
-
-    Riscv::w_stvec((uint64) &Riscv::supervisorTrap);
-    Riscv::ms_sstatus(Riscv::SSTATUS_SIE);
-
-    while (!(threads[1]->isFinished() &&
-             threads[2]->isFinished() &&
-             threads[3]->isFinished() &&
-             threads[4]->isFinished()))
-    {
-        TCB::yield();
-    }
-
-    for (auto &thread: threads)
-    {
-        delete thread;
-    }
-    printString("Finished\n");
-
-    return 0;*/
-
-
-
-    /*char* arr = (char*) mem_alloc(26*sizeof (char));
-    char c = 65;
-    for(int i = 0; i < 26; i++){
-        arr[i] = c + i;
-    }
-    for(int i = 0; i < 26; i++) __putc(arr[i]);
-
-    int status = mem_free(arr);
-    printInteger(status);*/
-
-    /*
-    TCB* main;
-    thread_create(&main, nullptr, nullptr);
-    //TCB::createThread(&main, nullptr, nullptr, nullptr);
-    TCB::running = main;
-    TCB* nit;
-    //uint64* stack = (uint64*) MemoryAllocator::malloc(DEFAULT_STACK_SIZE / TCB::STACK_SIZE + 1);
-    //auto stack = (uint64*) (new uint64[DEFAULT_STACK_SIZE]);
-
-    //TCB::createThread(&nit, usermain, nullptr, stack);
-
-    thread_create(&nit, usermain, nullptr);
-
-    TCB::yield();
-
-
-
-
-
-
-    return 0;
-}
-*/
 
 #include "../h/tcb.hpp"
 #include "../h/workers.hpp"
-#include "../h/print.hpp"
+#include "../test/printing.hpp"
 #include "../h/riscv.hpp"
 
-#include "../h/syscall_c.h"
+#include "../test/ConsumerProducer_C_API_test.hpp"
+#include "../test/System_Mode_test.hpp"
+
+
+#include "../h/syscall_c.hpp"
+
+static sem* s;
+static int i = 0;
+static char[] arr = mem_alloc(sizeof (char) * 3);
+
+
+void put(void*) {
+
+}
+
+void take(void*) {
+
+}
+
 
 int main()
 {
-    //TCB *threads[5];
 
-    Riscv::w_stvec((uint64) &Riscv::supervisorTrap);
-    //Allocator::init();
+    /*Riscv::w_stvec((uint64) &Riscv::supervisorTrap);
+    Allocator::init();
 
     TCB *threads[5];
 
@@ -121,23 +47,46 @@ int main()
     printString("ThreadC created\n");
     printString("ThreadD created\n");
 
-    //Riscv::ms_sstatus(Riscv::SSTATUS_SIE);
+    Riscv::ms_sstatus(Riscv::SSTATUS_SIE);
 
     while (!(threads[1]->isFinished() &&
-             threads[2]->isFinished() &&
-             threads[3]->isFinished() &&
-             threads[4]->isFinished()))
+    threads[2]->isFinished() &&
+    threads[3]->isFinished() &&
+    threads[4]->isFinished()))
     {
-        //thread_dispatch();
-        TCB::dispatch();
+    thread_dispatch();
     }
 
     for (auto &thread: threads)
     {
-        delete thread;
+    delete thread;
     }
 
     printString("Finished\n");
+
+    return 0;*/
+
+    Riscv::w_stvec((uint64) &Riscv::supervisorTrap);
+    Riscv::ms_sstatus(Riscv::SSTATUS_SIE);
+
+    TCB* nit;
+    thread_create(&nit, nullptr, nullptr);
+    TCB::running = nit;
+    /*TCB* usermain;
+    thread_create(&usermain, umain, nullptr);*/
+    TCB *nit1, *nit2;
+    thread_create(&nit1, umain, nullptr);
+    thread_create(&nit2, umain, nullptr);
+
+    sem_open(&s, 1);
+
+
+    while(!nit1->isFinished() || !nit2->isFinished()) thread_dispatch();
+
+    sem_close(s);
+    printString("\n");
+    printInteger(i);
+
 
     return 0;
 }

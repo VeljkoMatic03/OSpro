@@ -28,6 +28,12 @@ public:
 
     static void dispatch();
 
+    static int exit();
+
+    static void block();
+
+    void unblock();
+
 private:
     TCB(Body body, void* arg, uint64 timeSlice, uint64* stackptr) :
             body(body),
@@ -37,7 +43,8 @@ private:
                      stack != nullptr ? (uint64) &stack[DEFAULT_STACK_SIZE] : 0
                     }),
             timeSlice(timeSlice),
-            finished(false)
+            finished(false),
+            isBlocked(false)
     {
         if (body != nullptr) { Scheduler::put(this); }
     }
@@ -54,6 +61,7 @@ private:
     Context context;
     uint64 timeSlice;
     bool finished;
+    bool isBlocked;
 
     friend class Riscv;
 
