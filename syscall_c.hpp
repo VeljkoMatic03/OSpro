@@ -36,5 +36,9 @@ int sem_timedwait(sem_t id, time_t timeout);
 
 int sem_trywait(sem_t id);
 
+typedef unsigned long time_t;
+
+int time_sleep(time_t timeout);
+
 
 #endif //PROJECT_BASE_SYSCALL_C_H

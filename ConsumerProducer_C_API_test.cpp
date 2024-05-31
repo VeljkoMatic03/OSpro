@@ -1,6 +1,7 @@
 #include "printing.hpp"
 #include "../h/syscall_c.hpp"
 #include "../lib/console.h"
+#include "../h/_new.hpp"
 
 #include "buffer.hpp"
 
@@ -94,8 +95,8 @@ void producerConsumer_C_API() {
     printString(" i velicina bafera "); printInteger(n);
     printString(".\n");
 
-    if(threadNum < n) {
-        printString("Broj proizvodjaca ne sme biti manji od velicine bafera!\n");
+    if(threadNum > n) {
+        printString("Broj proizvodjaca ne sme biti veci od velicine bafera!\n");
         return;
     } else if (threadNum < 1) {
         printString("Broj proizvodjaca mora biti veci od nula!\n");
@@ -106,8 +107,6 @@ void producerConsumer_C_API() {
 
     sem_open(&waitForAll, 0);
 
-    printString("checkpoint 1\n");
-
     thread_t threads[threadNum];
     thread_t consumerThread;
 
@@ -117,6 +116,7 @@ void producerConsumer_C_API() {
     data[threadNum].buffer = buffer;
     data[threadNum].wait = waitForAll;
     thread_create(&consumerThread, consumer, data + threadNum);
+
 
     for (int i = 0; i < threadNum; i++) {
         data[i].id = i;

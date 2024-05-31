@@ -25,15 +25,12 @@ void Riscv::handleSupervisorTrap()
         uint64 volatile sepc = r_sepc() + 4;
         uint64 volatile sstatus = r_sstatus();
 
-        a2 = a2;
-        a3 = a3;
-        a4 = a4;
         int volatile retval;
 
         switch (a0) {
             case 0x01:
                 //mem_alloc(size_t)
-                void* pointer;
+                void* volatile pointer;
                 /*printString("\nSize:");
                 printInteger(size);*/
                 pointer = MemoryAllocator::malloc((size_t) a1);
@@ -72,31 +69,39 @@ void Riscv::handleSupervisorTrap()
 
             case 0x22:
                 //sem_close()
-                retval = sem::close((sem*) a1);
+                retval = ((sem*)a1)->close();
                 __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
                 break;
 
             case 0x23:
                 //sem_wait()
-                retval = sem::wait((sem*) a1);
+                retval = ((sem*)a1)->wait();
                 __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
                 break;
 
             case 0x24:
                 //sem_signal()
-                retval = sem::signal((sem*) a1);
+                retval = ((sem*)a1)->signal();
                 __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
                 break;
 
             case 0x25:
                 //sem_timedwait()
-                retval = sem::timedwait((sem*) a1, (time_t) a2);
+                retval = ((sem*)a1)->timedwait(a2);
                 __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
                 break;
 
             case 0x26:
                 //sem_trywait()
+                retval = ((sem*)a1)->trywait();
+                __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
+                break;
 
+            case 0x31:
+                //time_sleep()
+                retval = TCB::toSleep(a1);
+                __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
+                break;
 
             default:
                 /*Riscv::mc_sstatus(Riscv::SSTATUS_SPP);
@@ -111,10 +116,10 @@ void Riscv::handleSupervisorTrap()
     {
         // interrupt: yes; cause code: supervisor software interrupt (CLINT; machine timer interrupt)
         mc_sip(SIP_SSIP);
+        TCB::updateAsleep();
         TCB::timeSliceCounter++;
         if (TCB::timeSliceCounter >= TCB::running->getTimeSlice())
         {
-            __putc('a');
             uint64 volatile sepc = r_sepc();
             uint64 volatile sstatus = r_sstatus();
             TCB::timeSliceCounter = 0;
@@ -130,6 +135,10 @@ void Riscv::handleSupervisorTrap()
     }
     else
     {
+        printInteger(scause);
+        printString("\n");
+        printInteger(Riscv::r_sepc());
+        printString("\n");
         // unexpected trap cause
     }
 }

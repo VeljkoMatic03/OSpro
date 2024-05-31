@@ -10,11 +10,11 @@
 #include "../h/MemoryAllocator.hpp"
 
 void* mem_alloc(size_t size) {
+    void* volatile ptr;
     size = (size + MEM_BLOCK_SIZE - 1) / MEM_BLOCK_SIZE;
     __asm__ volatile ("mv a1, %0" : : "r"(size));
     __asm__ volatile ("li a0, 0x01");
     __asm__ volatile ("ecall");
-    void* volatile ptr;
     __asm__ volatile ("mv %0, a0" : "=r"(ptr));
     return (void*)ptr;
 }
@@ -30,7 +30,9 @@ int mem_free(void* ptr) {
 }
 
 int thread_create(thread_t* handle, void(*start_routine)(void*), void* arg) {
-    uint64* volatile stack = (uint64*) mem_alloc(DEFAULT_STACK_SIZE);
+    uint64* stack = (uint64*) MemoryAllocator::malloc(DEFAULT_STACK_SIZE * sizeof (uint64) /  MEM_BLOCK_SIZE + 1);
+//    printInteger((uint64) stack);
+//    printString(" THREAD STACK\n");
     //auto stack = (uint64*) (new uint64[DEFAULT_STACK_SIZE]);
     uint64 volatile argument = (uint64) arg;
     uint64 volatile func = (uint64) start_routine;
@@ -84,7 +86,7 @@ int sem_close(sem_t handle) {
 int sem_wait(sem_t id) {
     uint64 volatile handler = (uint64) id;
     __asm__ volatile ("mv a1, %0" : : "r"(handler));
-    __asm__ volatile ("li a0, 0x22");
+    __asm__ volatile ("li a0, 0x23");
     __asm__ volatile ("ecall");
     int volatile retval;
     __asm__ volatile ("mv %0, a0" : "=r"(retval));
@@ -94,7 +96,7 @@ int sem_wait(sem_t id) {
 int sem_signal(sem_t id) {
     uint64 volatile handler = (uint64) id;
     __asm__ volatile ("mv a1, %0" : : "r"(handler));
-    __asm__ volatile ("li a0, 0x22");
+    __asm__ volatile ("li a0, 0x24");
     __asm__ volatile ("ecall");
     int volatile retval;
     __asm__ volatile ("mv %0, a0" : "=r"(retval));
@@ -105,7 +107,7 @@ int sem_timedwait(sem_t id, time_t timeout) {
     uint64 volatile handler = (uint64) id;
     __asm__ volatile ("mv a2, %0" : : "r"(timeout));
     __asm__ volatile ("mv a1, %0" : : "r"(handler));
-    __asm__ volatile ("li a0, 0x22");
+    __asm__ volatile ("li a0, 0x25");
     __asm__ volatile ("ecall");
     int volatile retval;
     __asm__ volatile ("mv %0, a0" : "=r"(retval));
@@ -115,9 +117,18 @@ int sem_timedwait(sem_t id, time_t timeout) {
 int sem_trywait(sem_t id) {
     uint64 volatile handler = (uint64) id;
     __asm__ volatile ("mv a1, %0" : : "r"(handler));
-    __asm__ volatile ("li a0, 0x22");
+    __asm__ volatile ("li a0, 0x26");
     __asm__ volatile ("ecall");
     int volatile retval;
     __asm__ volatile ("mv %0, a0" : "=r"(retval));
+    return retval;
+}
+
+int time_sleep(time_t timeout) {
+    __asm__ volatile ("mv a1, %0" : : "r"(timeout));
+    __asm__ volatile ("li a0, 0x31");
+    __asm__ volatile ("ecall");
+    int retval;
+    __asm__ volatile ("mv a0, %0" : "=r"(retval));
     return retval;
 }

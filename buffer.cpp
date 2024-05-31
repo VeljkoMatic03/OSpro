@@ -1,9 +1,11 @@
 #include "buffer.hpp"
 #include "../lib/console.h"
+#include "../lib/mem.h"
+#include "../h/syscall_c.hpp"
 
 
 Buffer::Buffer(int _cap) : cap(_cap + 1), head(0), tail(0) {
-    buffer = (int *)mem_alloc(sizeof(int) * cap);
+    buffer = (int *) mem_alloc(sizeof(int) * cap);
     sem_open(&itemAvailable, 0);
     sem_open(&spaceAvailable, _cap);
     sem_open(&mutexHead, 1);

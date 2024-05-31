@@ -13,24 +13,39 @@ class sem {
 private:
 
     List<TCB> blockedQueue;
-    unsigned value;
+    int value;
     bool closed;
 
 public:
 
-    sem(unsigned init) : value(init), closed(false) {}
+    sem(int init) : value(init), closed(false) {}
 
-    static int wait(sem* s);
+    int wait();
 
-    static int signal(sem* s);
+    int signal();
 
-    static int close(sem* s);
+    int close();
 
-    static int timedwait(sem* s, time_t timeout);
+    int timedwait(time_t timeout);
 
-    static int trywait(sem* s);
+    int trywait();
 
     static int createSem(sem** handle, unsigned init);
+
+    static void* operator new(size_t size) {
+        return MemoryAllocator::malloc(size / MEM_BLOCK_SIZE + 1);
+    }
+    static void* operator new[](size_t size) {
+        return MemoryAllocator::malloc(size / MEM_BLOCK_SIZE + 1);
+    }
+
+    static void operator delete(void *ptr) {
+        MemoryAllocator::free(ptr);
+    }
+    static void operator delete[](void *ptr) {
+        MemoryAllocator::free(ptr);
+    }
+
 
 };
 

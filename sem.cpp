@@ -3,44 +3,69 @@
 //
 
 #include "../h/sem.hpp"
+#include "../test/printing.hpp"
 
 
-int sem::wait(sem* s) {
-    if(s->closed) return -1;
-    if((int) --(s->value) < 0) {
-        s->blockedQueue.addLast(TCB::running);
-        TCB::running->block();
-        if(s->closed) return -1;
+int sem::wait() {
+    if(closed) return -1;
+    value -= 1;
+    if((int)(value) < 0) {
+        blockedQueue.addLast(TCB::running);
+        //TCB::running->block();
+        TCB::running->isBlocked = true;
+        TCB::dispatch();
+        if(closed) return -1;
     }
     return 0;
 }
 
-int sem::signal(sem* s) {
-    if(s->closed) return -1;
-    if((int) ++(s->value) <= 0) {
-        TCB* t = s->blockedQueue.removeFirst();
+int sem::signal() {
+    if(closed) return -1;
+    if((int) ++(value) <= 0) {
+        TCB* t = blockedQueue.peekFirst();
+        blockedQueue.removeFirst();
         if(t) t->unblock();
     }
     return 0;
 }
 
-int sem::close(sem* s) {
-    if(s->closed) return -1;
-    s->closed = true;
-    while(s->blockedQueue.peekFirst()) {
-        TCB* t = s->blockedQueue.removeFirst();
+int sem::close() {
+    if(closed) return -1;
+    closed = true;
+    while(blockedQueue.peekFirst()) {
+        TCB* t = blockedQueue.removeFirst();
         t->unblock();
     }
     return 0;
 }
 
-int sem::timedwait(sem* s, time_t timeout) {
-    return 0;
+int sem::timedwait(time_t timeout) {
+    if(closed) return -1;
+    value--;
+    if((int) value < 0) {
+        blockedQueue.addLast(TCB::running);
+        TCB::running->isBlocked = true;
+        TCB::toSleep(timeout);
+    }
+    int retval = 0;
+    if(closed) return -1;
+    if(TCB::running->isBlocked) {
+        printString("\nTIMEOUT\n");
+        TCB::running->isBlocked = false;
+        blockedQueue.removeElem(TCB::running);
+        retval = -2;
+    }
+    if(TCB::running->isSleeping) {
+        printString("\nUNBLOCKED\n");
+        TCB::running->isSleeping = false;
+        TCB::pullOutAsleepThread(TCB::running);
+    }
+    return retval;
 }
 
-int sem::trywait(sem* s) {
-    if(s->closed) return -1;
-    return (s->value > 0 ? 1 : 0);
+int sem::trywait() {
+    if(closed) return -1;
+    return (value <= 0 ? 0 : 1);
 }
 
 int sem::createSem(sem** handle, unsigned int init) {

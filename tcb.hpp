@@ -3,6 +3,8 @@
 
 #include "../lib/hw.h"
 #include "scheduler.hpp"
+#include "../h/MemoryAllocator.hpp"
+
 
 // Thread Control Block
 class TCB
@@ -34,6 +36,29 @@ public:
 
     void unblock();
 
+    static int toSleep(time_t timeout);
+
+    static void wakeUp();
+
+    static void updateAsleep();
+
+    static void pullOutAsleepThread(TCB* t);
+
+    static void* operator new(size_t size) {
+        return MemoryAllocator::malloc(size / MEM_BLOCK_SIZE + 1);
+    }
+    static void* operator new[](size_t size) {
+        return MemoryAllocator::malloc(size / MEM_BLOCK_SIZE + 1);
+    }
+
+    static void operator delete(void *ptr) {
+        MemoryAllocator::free(ptr);
+    }
+    static void operator delete[](void *ptr) {
+        MemoryAllocator::free(ptr);
+    }
+
+
 private:
     TCB(Body body, void* arg, uint64 timeSlice, uint64* stackptr) :
             body(body),
@@ -44,7 +69,10 @@ private:
                     }),
             timeSlice(timeSlice),
             finished(false),
-            isBlocked(false)
+            isBlocked(false),
+            thisTimeLeftAsleep(0),
+            nextAsleep(nullptr),
+            isSleeping(false)
     {
         if (body != nullptr) { Scheduler::put(this); }
     }
@@ -62,15 +90,21 @@ private:
     uint64 timeSlice;
     bool finished;
     bool isBlocked;
+    uint64 thisTimeLeftAsleep;
+    TCB* nextAsleep;
+    bool isSleeping;
 
     friend class Riscv;
+    friend class sem;
 
     static void threadWrapper();
 
     static void contextSwitch(Context *oldContext, Context *runningContext);
 
+    static TCB *head, *tail;
 
     static uint64 timeSliceCounter;
+    static uint64 firstTimeLeftAsleep;
 
     static uint64 constexpr TIME_SLICE = 2;
 };
