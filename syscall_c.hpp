@@ -7,7 +7,6 @@
 
 #include "../lib/hw.h"
 
-
 void* mem_alloc(size_t size);
 
 int mem_free(void*);
@@ -39,6 +38,12 @@ int sem_trywait(sem_t id);
 typedef unsigned long time_t;
 
 int time_sleep(time_t timeout);
+
+const int EOF = -1;
+
+char getc();
+
+void putc(char);
 
 
 #endif //PROJECT_BASE_SYSCALL_C_H

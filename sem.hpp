@@ -5,9 +5,11 @@
 #ifndef PROJECT_BASE_SEM_H
 #define PROJECT_BASE_SEM_H
 
+#include "../lib/hw.h"
+#include "../h/MemoryAllocator.hpp"
 #include "../h/list.hpp"
-#include "../h/tcb.hpp"
-#include "../h/scheduler.hpp"
+
+class TCB;
 
 class sem {
 private:
@@ -18,7 +20,7 @@ private:
 
 public:
 
-    sem(int init) : value(init), closed(false) {}
+    sem(int init = 1) : value(init), closed(false) {}
 
     int wait();
 

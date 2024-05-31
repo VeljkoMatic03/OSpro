@@ -5,12 +5,13 @@
 #include "scheduler.hpp"
 #include "../h/MemoryAllocator.hpp"
 
-
 // Thread Control Block
 class TCB
 {
 public:
-    ~TCB() { delete[] stack; }
+    ~TCB() {
+        delete[] stack;
+    }
 
     bool isFinished() const { return finished; }
 
@@ -52,9 +53,11 @@ public:
     }
 
     static void operator delete(void *ptr) {
+        if(!ptr) return;
         MemoryAllocator::free(ptr);
     }
     static void operator delete[](void *ptr) {
+        if(!ptr) return;
         MemoryAllocator::free(ptr);
     }
 

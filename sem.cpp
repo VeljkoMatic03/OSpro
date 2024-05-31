@@ -3,14 +3,15 @@
 //
 
 #include "../h/sem.hpp"
-#include "../test/printing.hpp"
+#include "../h/tcb.hpp"
+#include "../h/scheduler.hpp"
 
 
 int sem::wait() {
     if(closed) return -1;
     value -= 1;
     if((int)(value) < 0) {
-        blockedQueue.addLast(TCB::running);
+        this->blockedQueue.addLast(TCB::running);
         //TCB::running->block();
         TCB::running->isBlocked = true;
         TCB::dispatch();
@@ -50,13 +51,11 @@ int sem::timedwait(time_t timeout) {
     int retval = 0;
     if(closed) return -1;
     if(TCB::running->isBlocked) {
-        printString("\nTIMEOUT\n");
         TCB::running->isBlocked = false;
         blockedQueue.removeElem(TCB::running);
         retval = -2;
     }
     if(TCB::running->isSleeping) {
-        printString("\nUNBLOCKED\n");
         TCB::running->isSleeping = false;
         TCB::pullOutAsleepThread(TCB::running);
     }

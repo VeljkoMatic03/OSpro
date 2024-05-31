@@ -1,9 +1,8 @@
 #include "../h/riscv.hpp"
 #include "../h/tcb.hpp"
-#include "../lib/console.h"
 #include "../h/MemoryAllocator.hpp"
-#include "../test/printing.hpp"
 #include "../h/sem.hpp"
+#include "../h/console.hpp"
 
 void Riscv::popSppSpie()
 {
@@ -26,13 +25,12 @@ void Riscv::handleSupervisorTrap()
         uint64 volatile sstatus = r_sstatus();
 
         int volatile retval;
+        char volatile c;
 
         switch (a0) {
             case 0x01:
                 //mem_alloc(size_t)
                 void* volatile pointer;
-                /*printString("\nSize:");
-                printInteger(size);*/
                 pointer = MemoryAllocator::malloc((size_t) a1);
                 __asm__ volatile ("sd %0, 80(s0)" : : "r"(pointer));
                 break;
@@ -103,9 +101,26 @@ void Riscv::handleSupervisorTrap()
                 __asm__ volatile ("sd %0, 80(s0)" : : "r"(retval));
                 break;
 
+            case 0x41:
+                //getc()
+                /*while((*((char*) CONSOLE_STATUS) & CONSOLE_RX_STATUS_BIT) && console::input->getCnt() != 100) {
+                    volatile char c = *(char *) CONSOLE_RX_DATA;
+                    console::input->put(c);
+                }*/
+                c = console::getc();
+                __asm__ volatile ("sd %0, 80(s0)" : : "r"(c));
+                break;
+
+            case 0x42:
+                //putc()
+                console::putc((char) a1);
+                while ((*((char *) CONSOLE_STATUS) & CONSOLE_TX_STATUS_BIT) && console::output->getCnt() != 0) {
+                    char volatile c = console::output->get();
+                    *(volatile char *) CONSOLE_TX_DATA = c;
+                }
+                break;
+
             default:
-                /*Riscv::mc_sstatus(Riscv::SSTATUS_SPP);
-                sstatus = r_sstatus();*/
                 break;
         }
 
@@ -131,14 +146,30 @@ void Riscv::handleSupervisorTrap()
     else if (scause == 0x8000000000000009UL)
     {
         // interrupt: yes; cause code: supervisor external interrupt (PLIC; could be keyboard)
-        console_handler();
+        uint64 sepc = r_sepc();
+        uint64 sstatuc = r_sstatus();
+
+        uint64 ir_num = plic_claim();
+        plic_complete((int)ir_num);
+        Riscv::mc_sip(Riscv::SIP_SSIP);
+
+        if(ir_num == CONSOLE_IRQ) {
+            while((*((char*) CONSOLE_STATUS) & CONSOLE_RX_STATUS_BIT) && console::input->getCnt() != 100) {
+                volatile char c = *(char *) CONSOLE_RX_DATA;
+                console::input->put(c);
+            }
+            while ((*((char *) CONSOLE_STATUS) & CONSOLE_TX_STATUS_BIT) && console::output->getCnt() != 0) {
+                char volatile c = console::output->get();
+                *(volatile char *) CONSOLE_TX_DATA = c;
+            }
+        }
+
+
+        w_sepc(sepc);
+        w_sstatus(sstatuc);
     }
     else
     {
-        printInteger(scause);
-        printString("\n");
-        printInteger(Riscv::r_sepc());
-        printString("\n");
         // unexpected trap cause
     }
 }

@@ -5,36 +5,34 @@
 #include "../test/printing.hpp"
 
 template<typename T>
-class Elem
-{
-public:
-    T *data;
-    Elem *next;
-
-    Elem(T *data, Elem *next) : data(data), next(next) {}
-
-    static void* operator new(size_t size) {
-        return MemoryAllocator::malloc(size / MEM_BLOCK_SIZE + 1);
-    }
-    static void* operator new[](size_t size) {
-        return MemoryAllocator::malloc(size / MEM_BLOCK_SIZE + 1);
-    }
-
-    static void operator delete(void *ptr) {
-        MemoryAllocator::free(ptr);
-    }
-    static void operator delete[](void *ptr) {
-        MemoryAllocator::free(ptr);
-    }
-};
-
-
-template<typename T>
 class List
 {
 private:
 
-    Elem<T> *head, *tail;
+    struct Elem
+    {
+    public:
+        T *data;
+        Elem *next;
+
+        Elem(T *data, Elem *next) : data(data), next(next) {}
+
+        static void* operator new(size_t size) {
+            return MemoryAllocator::malloc(size / MEM_BLOCK_SIZE + 1);
+        }
+        static void* operator new[](size_t size) {
+            return MemoryAllocator::malloc(size / MEM_BLOCK_SIZE + 1);
+        }
+
+        static void operator delete(void *ptr) {
+            MemoryAllocator::free(ptr);
+        }
+        static void operator delete[](void *ptr) {
+            MemoryAllocator::free(ptr);
+        }
+    };
+
+    Elem *head, *tail;
 
 public:
     List() : head(0), tail(0) {}
@@ -45,14 +43,14 @@ public:
 
     void addFirst(T *data)
     {
-        Elem<T> *elem = new Elem<T>(data, head);
+        Elem *elem = new Elem(data, head);
         head = elem;
         if (!tail) { tail = head; }
     }
 
     void addLast(T *data)
     {
-        Elem<T> *elem = new Elem<T>(data, 0);
+        Elem *elem = new Elem(data, 0);
         if (tail)
         {
             tail->next = elem;
@@ -67,7 +65,7 @@ public:
     {
         if (!head) { return 0; }
 
-        Elem<T> *elem = head;
+        Elem *elem = head;
         head = head->next;
         if (!head) { tail = 0; }
 
@@ -86,13 +84,13 @@ public:
     {
         if (!head) { return 0; }
 
-        Elem<T> *prev = 0;
-        for (Elem<T> *curr = head; curr && curr != tail; curr = curr->next)
+        Elem *prev = 0;
+        for (Elem *curr = head; curr && curr != tail; curr = curr->next)
         {
             prev = curr;
         }
 
-        Elem<T> *elem = tail;
+        Elem *elem = tail;
         if (prev) { prev->next = 0; }
         else { head = 0; }
         tail = prev;
@@ -109,7 +107,7 @@ public:
     }
 
     void removeElem(T* elem) {
-        Elem<T> *prev, *curr;
+        Elem *prev, *curr;
         prev = nullptr;
         curr = head;
         while(curr) {

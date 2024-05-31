@@ -4,8 +4,6 @@
 
 #include "../h/tcb.hpp"
 #include "../h/riscv.hpp"
-#include "../lib/console.h"
-#include "../test/printing.hpp"
 
 TCB *TCB::running = nullptr;
 
@@ -44,7 +42,8 @@ void TCB::dispatch()
 
 void TCB::threadWrapper()
 {
-    if(running->body) Riscv::ms_sstatus(Riscv::SSTATUS_SPP);
+    if(running->body) Riscv::mc_sstatus(Riscv::SSTATUS_SPP);
+    //else Riscv::mc_sstatus(Riscv::SSTATUS_SPP);
     Riscv::popSppSpie();
     running->body(running->arg);
     running->setFinished(true);
@@ -69,6 +68,7 @@ void TCB::unblock() {
 
 int TCB::toSleep(time_t timeout) {
     if(!TCB::running) return -1;
+    if(timeout == 0) return 0;
     TCB::running->thisTimeLeftAsleep = timeout;
     TCB::running->isSleeping = true;
     if(!head) {
@@ -132,7 +132,7 @@ void TCB::updateAsleep() {
     if(!head) return;
     TCB::head->thisTimeLeftAsleep--;
     TCB::firstTimeLeftAsleep--;
-    if(TCB::firstTimeLeftAsleep == 0) wakeUp();
+    if(TCB::firstTimeLeftAsleep <= 0) wakeUp();
 }
 
 void TCB::pullOutAsleepThread(TCB* t) {
